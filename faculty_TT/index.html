@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Faculty-wise Timetable</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background: lightblue;
+        }
+        .batch-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 30px;
+        }
+        .highlight-VI-SU-B2 {
+            background-color: red;
+            color: white;
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Upload CSV File</h2>
+<input type="file" id="csvFile" accept=".csv">
+
+<h2>Select a FACULTY-ID to get their timetable</h2>
+
+<select id="facultyDropdown" style="height:40px; width:320px;">
+    <option value="">Select Faculty-ID</option>
+    <option value="20232 : Mr. I N V Suryanarayana">20232 : Mr. I N V Suryanarayana</option>
+    <option value="10209 : Dr. B. Padmaja">10209 : Dr. B. Padmaja</option>
+    <option value="10813 : Dr. B Ravi Kumar">10813 : Dr. B Ravi Kumar</option>
+    <option value="10900 : Mr. B. Ramesh">10900 : Mr. B. Ramesh</option>
+    <option value="10237 : Mr E. Krishna Rao Patro">10237 : Mr E. Krishna Rao Patro</option>
+    <option value="10196 : Mr. S. Srikanth">10196 : Mr. S. Srikanth</option>
+    <option value="10046 : Dr. D Khalandar Basha">10046 : Dr. D Khalandar Basha</option>
+    <option value="10817 : Dr. V Kishen Ajay Kumar">10817 : Dr. V Kishen Ajay Kumar</option>
+    <option value="10309 : Ms. K Mayuri">10309 : Ms. K Mayuri</option>
+    <option value="10879 : Dr. C V R Padmaja">10879 : Dr. C V R Padmaja</option>
+    <option value="10663 : Ms. KS Indrani">10663 : Ms. KS Indrani</option>
+    <option value="10065 : Mr. S. Lakshmanachari">10065 : Mr. S. Lakshmanachari</option>
+    <option value="10564 : Mr. P V Narasimha Rao">10564 : Mr. P V Narasimha Rao</option>
+    <option value="10795 : Dr. B Surekha Reddy">10795 : Dr. B Surekha Reddy</option>
+    <option value="20407 : Ms. M Padmaja">20407 : Ms. M Padmaja</option>
+    <option value="10970 : Mr. B Madhusudhan Rao">10970 : Mr. B Madhusudhan Rao</option>
+    <option value="10052 : Ms. G Ajitha">10052 : Ms. G Ajitha</option>
+    <option value="10083 : Dr. A. Naresh Kumar">10083 : Dr. A. Naresh Kumar</option>
+</select>
+
+<button onclick="showFacultyTable()" style="height:40px; width:100px;">Show</button>
+
+<div id="tables"></div>
+
+<script>
+document.getElementById("csvFile").addEventListener("change", function () {
+    Papa.parse(this.files[0], {
+        header: true,
+        skipEmptyLines: true,
+        complete: function (result) {
+            processCSV(result.data);
+        }
+    });
+});
+
+let globalTimetable = {};
+
+function getFacultyId(value) {
+    return value.split(":")[0].trim();
+}
+
+function processCSV(data) {
+    const timetable = {};
+
+    data.forEach(row => {
+        const batch = row["BATCH"];
+        const day = row["DAY"];
+        const session = row["SESSION"];
+        const course = row["COURSE"];
+        const room = row["ROOM"];
+        const faculty = row["FACULTY"];
+
+        if (!faculty || !day || !session) return;
+
+        const facultyId = getFacultyId(faculty);
+
+        if (!timetable[facultyId]) {
+            timetable[facultyId] = {};
+        }
+
+        if (!timetable[facultyId][day]) {
+            timetable[facultyId][day] = { FN: "", AN: "" };
+        }
+
+        let batchHTML = batch;
+        if (batch === "VI-SU-B2") {
+            batchHTML = `<span class="highlight-VI-SU-B2">${batch}</span>`;
+        }
+
+        timetable[facultyId][day][session] =
+            `${batchHTML}<br>${course}<br>Room: ${room}`;
+    });
+
+    globalTimetable = timetable;
+}
+
+function showFacultyTable() {
+    const selectedFaculty = document.getElementById("facultyDropdown").value;
+    if (!selectedFaculty) {
+        alert("Please select a faculty");
+        return;
+    }
+
+    const selectedFacultyId = getFacultyId(selectedFaculty);
+    const container = document.getElementById("tables");
+    container.innerHTML = "";
+
+    const days = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
+    const title = document.createElement("div");
+    title.className = "batch-title";
+    title.innerHTML = `Faculty: ${selectedFaculty}`;
+    container.appendChild(title);
+
+    const table = document.createElement("table");
+
+    let html = `
+        <tr>
+            <th>DAY</th>
+            <th>FN</th>
+            <th rowspan="7">L<br>U<br>N<br>C<br>H</th>
+            <th>AN</th>
+        </tr>
+    `;
+
+    days.forEach(day => {
+        const fn = globalTimetable[selectedFacultyId]?.[day]?.FN || "";
+        const an = globalTimetable[selectedFacultyId]?.[day]?.AN || "";
+
+        html += `
+            <tr>
+                <td>${day}</td>
+                <td>${fn}</td>
+                <td>${an}</td>
+            </tr>
+        `;
+    });
+
+    table.innerHTML = html;
+    container.appendChild(table);
+}
+</script>
+
+</body>
+</html>
